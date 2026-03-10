@@ -396,6 +396,10 @@
     Scrapper
   </a>
   <span class="badge">beta</span>
+  <div style="flex:1"></div>
+  <button id="updateBtn" onclick="runUpdate()" style="font-size:13px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-family:inherit;">
+    Aktualizuj
+  </button>
 </header>
 
 <div class="layout">
@@ -722,6 +726,32 @@ function escHtml(s) {
 }
 
 init();
+
+async function runUpdate() {
+  const btn = document.getElementById('updateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Aktualizuję...';
+  try {
+    const res = await fetch('/api/update', { method: 'POST' });
+    const data = await res.json();
+    if (data.ok) {
+      btn.textContent = 'Zaktualizowano!';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      btn.textContent = 'Błąd!';
+      btn.style.color = 'var(--red)';
+      btn.style.borderColor = 'var(--red)';
+      alert('Błąd aktualizacji:\n' + data.message);
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Aktualizuj'; btn.style.color = ''; btn.style.borderColor = ''; }, 3000);
+    }
+  } catch {
+    btn.textContent = 'Błąd połączenia';
+    btn.style.color = 'var(--red)';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Aktualizuj'; btn.style.color = ''; btn.style.borderColor = ''; }, 3000);
+  }
+}
 </script>
 </body>
 </html>

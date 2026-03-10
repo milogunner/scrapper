@@ -136,6 +136,15 @@ app.get('/api/jobs/:id/download', (req, res) => {
   res.download(file, job.filename);
 });
 
+// ── API: update from GitHub ───────────────────────────────────────────────────
+app.post('/api/update', (req, res) => {
+  const { exec } = require('child_process');
+  exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
+    if (err) return res.status(500).json({ ok: false, message: stderr || err.message });
+    res.json({ ok: true, message: stdout.trim() || 'Already up to date.' });
+  });
+});
+
 // ── Cleanup old jobs (keep last 20) ──────────────────────────────────────────
 setInterval(() => {
   const ids = Object.keys(jobs);
