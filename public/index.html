@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrapper</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #f5f5f7;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --text:       #111827;
+      --muted:      #6b7280;
+      --accent:     #2563eb;
+      --accent-dim: #eff6ff;
+      --green:      #16a34a;
+      --green-dim:  #f0fdf4;
+      --red:        #dc2626;
+      --red-dim:    #fef2f2;
+      --yellow:     #d97706;
+      --yellow-dim: #fffbeb;
+      --radius:     12px;
+      --shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-lg:  0 4px 16px rgba(0,0,0,.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:         #0f1117;
+        --surface:    #1a1d27;
+        --border:     #2a2d3a;
+        --text:       #e8eaf0;
+        --muted:      #7b7f8e;
+        --accent:     #4f84f0;
+        --accent-dim: #1a2340;
+        --green:      #3dba6e;
+        --green-dim:  #0d2318;
+        --red:        #f05555;
+        --red-dim:    #2a1010;
+        --yellow:     #f0a830;
+        --yellow-dim: #2a1e08;
+        --shadow:     0 1px 3px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.25);
+        --shadow-lg:  0 4px 16px rgba(0,0,0,.45);
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -.3px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 16px;
+    }
+    header .badge {
+      margin-left: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 100px;
+      letter-spacing: .2px;
+    }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .layout {
+      display: flex;
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 16px;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+    }
+    .sidebar-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 12px;
+      margin-bottom: 8px;
+    }
+    .shop-list { display: flex; flex-direction: column; gap: 2px; }
+    .shop-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      width: 100%;
+      text-align: left;
+      transition: background .15s;
+    }
+    .shop-btn:hover { background: var(--border); }
+    .shop-btn.active { background: var(--accent-dim); color: var(--accent); }
+    .shop-logo {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      object-fit: contain;
+      border: 1px solid var(--border);
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .shop-logo.obi { background: #f15a23; color: white; }
+
+    /* ── Main ────────────────────────────────────────── */
+    .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Card ────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-title { font-size: 16px; font-weight: 700; }
+    .card-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .card-body { padding: 24px; }
+
+    /* ── URL input row ───────────────────────────────── */
+    .input-row { display: flex; gap: 10px; }
+    .url-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .15s;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--surface);
+    }
+    .url-input:focus { border-color: var(--accent); }
+    .url-input::placeholder { color: var(--muted); }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-danger:hover:not(:disabled) { opacity: .88; }
+    .btn-success { background: var(--green); color: white; }
+    .btn-success:hover:not(:disabled) { opacity: .88; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--border); }
+
+    /* ── Progress ────────────────────────────────────── */
+    .progress-section { display: flex; flex-direction: column; gap: 16px; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .stat-box {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red   { color: var(--red);   }
+    .stat-val.blue  { color: var(--accent);}
+    .stat-val.muted { color: var(--muted); }
+    .stat-lbl { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    .progress-bar-wrap {
+      background: var(--border);
+      border-radius: 100px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 100px;
+      transition: width .4s ease;
+    }
+    .progress-bar.done { background: var(--green); }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Log ─────────────────────────────────────────── */
+    .log-wrap {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .log-head {
+      padding: 8px 14px;
+      background: var(--bg);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .log-body {
+      max-height: 340px;
+      overflow-y: auto;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      line-height: 1.6;
+    }
+    .log-entry {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 5px 14px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeIn .2s ease;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+    .log-entry.ok     { }
+    .log-entry.error  { background: var(--red-dim); }
+    .log-entry.skip   { background: var(--yellow-dim); }
+    .log-entry.info   { background: var(--accent-dim); }
+    .log-icon { flex-shrink: 0; font-size: 14px; width: 18px; text-align: center; }
+    .log-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-meta { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+    /* ── Done card ───────────────────────────────────── */
+    .done-card {
+      background: var(--green-dim);
+      border: 1.5px solid #bbf7d0;
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .done-text { font-size: 15px; font-weight: 600; color: var(--green); }
+    .done-sub  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Empty state ─────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty h2   { font-size: 18px; color: var(--text); margin-bottom: 6px; }
+    .empty p    { font-size: 14px; max-width: 340px; margin: 0 auto; }
+
+    /* ── Spinner ─────────────────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner.dark {
+      border-color: rgba(0,0,0,.15);
+      border-top-color: var(--accent);
+    }
+
+    /* ── Status pill ─────────────────────────────────── */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .pill.running { background: var(--accent-dim); color: var(--accent); }
+    .pill.done    { background: var(--green-dim);  color: var(--green);  }
+    .pill.error   { background: var(--red-dim);    color: var(--red);    }
+
+    /* ── Hint ────────────────────────────────────────── */
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .hint a { color: var(--accent); text-decoration: none; }
+    .hint a:hover { text-decoration: underline; }
+
+    /* ── Scrollbar ───────────────────────────────────── */
+    .log-body::-webkit-scrollbar { width: 6px; }
+    .log-body::-webkit-scrollbar-track { background: transparent; }
+    .log-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
+
+    /* ── Hidden ──────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    @media (max-width: 700px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="/">
+    <div class="logo-icon">⚙</div>
+    Scrapper
+  </a>
+  <span class="badge">beta</span>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Sklepy</div>
+    <div class="shop-list" id="shopList">
+      <!-- injected by JS -->
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🛒</div>
+      <h2>Wybierz sklep</h2>
+      <p>Kliknij sklep z listy po lewej, aby zacząć scrapować produkty.</p>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let scrapers   = [];
+let activeSlug = null;
+let activeJob  = null;  // { id, eventSource, status }
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  const res = await fetch('/api/scrapers');
+  scrapers = await res.json();
+  renderSidebar();
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('shopList');
+  list.innerHTML = scrapers.map(s => `
+    <button class="shop-btn" data-slug="${s.slug}" onclick="selectShop('${s.slug}')">
+      <span class="shop-logo ${s.slug}">${s.slug.toUpperCase().slice(0,3)}</span>
+      ${s.name}
+    </button>
+  `).join('');
+}
+
+function selectShop(slug) {
+  activeSlug = slug;
+  document.querySelectorAll('.shop-btn').forEach(b => b.classList.toggle('active', b.dataset.slug === slug));
+  renderScraper();
+}
+
+// ── Scraper panel ─────────────────────────────────────────────────────────────
+function renderScraper() {
+  const scraper = scrapers.find(s => s.slug === activeSlug);
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="shop-logo ${scraper.slug}">${scraper.slug.toUpperCase().slice(0,3)}</div>
+        <div>
+          <div class="card-title">${scraper.name}</div>
+          <div class="card-subtitle">Wprowadź link do kategorii i kliknij Start</div>
+        </div>
+        <div id="statusPill" class="hidden"></div>
+      </div>
+      <div class="card-body">
+        <div class="input-row">
+          <input id="urlInput" class="url-input"
+            type="url"
+            placeholder="https://www.obi.pl/ogrod-i-wypoczynek/grille/c/866"
+            autocomplete="off" spellcheck="false"
+          />
+          <button id="startBtn" class="btn btn-primary" onclick="startScrape()">
+            ▶ Start
+          </button>
+          <button id="stopBtn" class="btn btn-danger hidden" onclick="stopScrape()">
+            ⏹ Stop
+          </button>
+        </div>
+        <div class="hint" id="urlHint">
+          Wklej URL kategorii — np. <a href="#" onclick="setExampleUrl(event)">przykładowy link OBI</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="progressCard" class="card hidden">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Postęp scrapowania</div>
+          <div class="card-subtitle" id="progressSubtitle">Ładowanie…</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-section">
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-val blue" id="statTotal">–</div>
+              <div class="stat-lbl">Produktów</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val green" id="statOk">0</div>
+              <div class="stat-lbl">OK</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val red" id="statErr">0</div>
+              <div class="stat-lbl">Błędy</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val muted" id="statSkip">0</div>
+              <div class="stat-lbl">Pominięto</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" id="progressBar" style="width:0%"></div>
+            </div>
+            <div class="progress-label">
+              <span id="progressPct">0%</span>
+              <span id="progressFrac">0 / 0</span>
+            </div>
+          </div>
+
+          <div class="log-wrap">
+            <div class="log-head">
+              <span>Log zdarzeń</span>
+              <span id="logCount" style="color:var(--muted)">0 wpisów</span>
+            </div>
+            <div class="log-body" id="logBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="doneCard" class="done-card hidden">
+      <div>
+        <div class="done-text">✓ Gotowe! Plik CSV jest gotowy do pobrania.</div>
+        <div class="done-sub" id="doneSub"></div>
+      </div>
+      <button class="btn btn-success" id="downloadBtn" onclick="downloadCsv()">
+        ↓ Pobierz CSV
+      </button>
+    </div>
+  `;
+}
+
+function setExampleUrl(e) {
+  e.preventDefault();
+  document.getElementById('urlInput').value = 'https://www.obi.pl/ogrod-i-wypoczynek/grille/c/866';
+}
+
+// ── Start scrape ──────────────────────────────────────────────────────────────
+async function startScrape() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) { alert('Podaj URL kategorii.'); return; }
+
+  // Reset UI
+  resetProgress();
+  document.getElementById('progressCard').classList.remove('hidden');
+  document.getElementById('doneCard').classList.add('hidden');
+  document.getElementById('startBtn').classList.add('hidden');
+  document.getElementById('stopBtn').classList.remove('hidden');
+  setStatusPill('running', '⏳ Trwa…');
+
+  // Create job
+  const res = await fetch('/api/jobs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scraper: activeSlug, url }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert('Błąd: ' + err.error);
+    resetControls();
+    return;
+  }
+
+  const { jobId } = await res.json();
+  activeJob = { id: jobId };
+
+  // Connect SSE
+  const es = new EventSource(`/api/jobs/${jobId}/stream`);
+  activeJob.es = es;
+
+  es.onmessage = e => handleEvent(JSON.parse(e.data));
+  es.onerror   = () => es.close();
+}
+
+// ── Handle events ─────────────────────────────────────────────────────────────
+let logCount = 0;
+let statsTotal = 0, statsOk = 0, statsErr = 0, statsSkip = 0;
+
+function resetProgress() {
+  logCount = statsTotal = statsOk = statsErr = statsSkip = 0;
+  document.getElementById('statTotal').textContent = '–';
+  document.getElementById('statOk').textContent    = '0';
+  document.getElementById('statErr').textContent   = '0';
+  document.getElementById('statSkip').textContent  = '0';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressPct').textContent = '0%';
+  document.getElementById('progressFrac').textContent = '0 / 0';
+  document.getElementById('logBody').innerHTML = '';
+  document.getElementById('logCount').textContent = '0 wpisów';
+  document.getElementById('progressSubtitle').textContent = 'Ładowanie…';
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'start') {
+    statsTotal = ev.total;
+    document.getElementById('statTotal').textContent = ev.total;
+    document.getElementById('progressSubtitle').textContent = `Znaleziono ${ev.total} produktów`;
+    addLog('info', 'ℹ', `Znaleziono ${ev.total} produktów do scrapowania`, '');
+
+  } else if (ev.type === 'product') {
+    const done = ev.index;
+    const pct  = Math.round((done / ev.total) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressFrac').textContent = `${done} / ${ev.total}`;
+    document.getElementById('progressSubtitle').textContent = `Scrapuję produkt ${done} z ${ev.total}…`;
+
+    if (ev.status === 'ok') {
+      statsOk++;
+      document.getElementById('statOk').textContent = statsOk;
+      const price = ev.salePrice
+        ? `${ev.price} → ${ev.salePrice} zł`
+        : `${ev.price} zł`;
+      const variantInfo = ev.variants ? ` · ${ev.variants} wariantów` : '';
+      addLog('ok', '✓', ev.title, `${price} · ${ev.images} zdjęć${variantInfo}`);
+    } else {
+      statsSkip++;
+      document.getElementById('statSkip').textContent = statsSkip;
+      addLog('skip', '–', '404 — ' + ev.title, '');
+    }
+
+  } else if (ev.type === 'error') {
+    statsErr++;
+    document.getElementById('statErr').textContent = statsErr;
+    addLog('error', '✗', ev.url.split('/').pop() || ev.url, ev.message?.slice(0, 60));
+
+  } else if (ev.type === 'done') {
+    onDone(ev);
+
+  } else if (ev.type === 'fatal') {
+    addLog('error', '💥', 'Krytyczny błąd!', ev.message?.slice(0, 80));
+    resetControls();
+    setStatusPill('error', '✗ Błąd');
+  }
+}
+
+function addLog(type, icon, text, meta) {
+  logCount++;
+  const body = document.getElementById('logBody');
+  const el = document.createElement('div');
+  el.className = `log-entry ${type}`;
+  el.innerHTML = `
+    <span class="log-icon">${icon}</span>
+    <span class="log-text" title="${escHtml(text)}">${escHtml(text)}</span>
+    ${meta ? `<span class="log-meta">${escHtml(meta)}</span>` : ''}
+  `;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+  document.getElementById('logCount').textContent = logCount + ' wpisów';
+}
+
+function onDone(ev) {
+  // Progress bar → green + 100%
+  const bar = document.getElementById('progressBar');
+  bar.style.width = '100%';
+  bar.classList.add('done');
+  document.getElementById('progressPct').textContent = '100%';
+  document.getElementById('progressSubtitle').textContent = 'Zakończono';
+  setStatusPill('done', '✓ Gotowe');
+
+  addLog('info', '🎉', `Zakończono: ${ev.success} OK, ${ev.errors} błędów, ${ev.skipped} pominięto`, '');
+
+  // Show download card
+  const doneCard = document.getElementById('doneCard');
+  doneCard.classList.remove('hidden');
+  document.getElementById('doneSub').textContent =
+    `${ev.success} produktów · ${ev.errors} błędów · ${ev.skipped} pominięto`;
+
+  resetControls();
+}
+
+function downloadCsv() {
+  if (!activeJob) return;
+  window.location.href = `/api/jobs/${activeJob.id}/download`;
+}
+
+// ── Stop ──────────────────────────────────────────────────────────────────────
+async function stopScrape() {
+  if (!activeJob) return;
+  activeJob.es?.close();
+  await fetch(`/api/jobs/${activeJob.id}`, { method: 'DELETE' });
+  addLog('error', '⏹', 'Scrapowanie zatrzymane przez użytkownika', '');
+  resetControls();
+  setStatusPill('error', '⏹ Zatrzymano');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function resetControls() {
+  document.getElementById('startBtn').classList.remove('hidden');
+  document.getElementById('stopBtn').classList.add('hidden');
+}
+
+function setStatusPill(type, text) {
+  const pill = document.getElementById('statusPill');
+  if (!pill) return;
+  pill.className = `pill ${type}`;
+  pill.textContent = text;
+  pill.classList.remove('hidden');
+}
+
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+init();
+</script>
+</body>
+</html>
