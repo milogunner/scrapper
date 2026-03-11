@@ -3,6 +3,10 @@ const path    = require('path');
 const crypto  = require('crypto');
 const fs      = require('fs');
 
+// Ensure required directories exist
+fs.mkdirSync(path.join(__dirname, 'downloads'), { recursive: true });
+fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -141,7 +145,12 @@ app.post('/api/update', (req, res) => {
   const { exec } = require('child_process');
   exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ ok: false, message: stderr || err.message });
-    res.json({ ok: true, message: stdout.trim() || 'Already up to date.' });
+    const pullMsg = stdout.trim() || 'Already up to date.';
+    // Install any new dependencies after pull
+    exec('npm install', { cwd: __dirname }, (err2, stdout2, stderr2) => {
+      if (err2) return res.status(500).json({ ok: false, message: 'git pull OK, npm install failed:\n' + (stderr2 || err2.message) });
+      res.json({ ok: true, message: pullMsg });
+    });
   });
 });
 
