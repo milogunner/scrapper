@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrapper — Konfiguracja</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #f5f5f7;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.12);
+      padding: 36px 40px;
+      width: 100%;
+      max-width: 460px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: #2563eb;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .logo-title { font-size: 22px; font-weight: 800; }
+    .logo-sub   { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+    h2 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    p  { font-size: 14px; color: #374151; line-height: 1.6; }
+
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 20px 0;
+      font-size: 13px;
+      color: #1d4ed8;
+      line-height: 1.6;
+    }
+
+    .log-box {
+      background: #111;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      color: #a3e635;
+      max-height: 160px;
+      overflow-y: auto;
+      margin: 16px 0;
+      display: none;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .log-box.visible { display: block; }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+    .btn-success { background: #16a34a; color: white; }
+    .btn-success:hover:not(:disabled) { opacity: .88; }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 10px;
+      min-height: 22px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">⚙</div>
+    <div>
+      <div class="logo-title">Scrapper</div>
+      <div class="logo-sub">Pierwsze uruchomienie</div>
+    </div>
+  </div>
+
+  <h2>Pobieranie przeglądarki</h2>
+  <p>Scrapper potrzebuje wbudowanej przeglądarki (Chromium) do pobierania danych ze stron. To jednorazowa konfiguracja.</p>
+
+  <div class="info-box">
+    📦 Do pobrania: <strong>~160 MB</strong><br>
+    ⏱ Czas: ok. 1–3 minuty (zależy od łącza)<br>
+    📁 Instalacja do folderu użytkownika (nie wymaga admina)
+  </div>
+
+  <div id="logBox" class="log-box"></div>
+
+  <button id="installBtn" class="btn btn-primary" onclick="startInstall()">
+    ⬇ Pobierz i skonfiguruj
+  </button>
+  <button id="launchBtn" class="btn btn-success" onclick="launch()" style="display:none">
+    ▶ Uruchom Scrapper
+  </button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+let installing = false;
+
+function setStatus(msg, spinner) {
+  const el = document.getElementById('status');
+  el.innerHTML = spinner
+    ? `<div class="spinner"></div> ${msg}`
+    : msg;
+}
+
+function startInstall() {
+  if (installing) return;
+  installing = true;
+
+  const btn = document.getElementById('installBtn');
+  btn.disabled = true;
+  btn.textContent = '⬇ Pobieranie...';
+
+  const logBox = document.getElementById('logBox');
+  logBox.classList.add('visible');
+  setStatus('Pobieranie przeglądarki Chromium…', true);
+
+  window.scrapper.onProgress(msg => {
+    logBox.textContent += msg;
+    logBox.scrollTop = logBox.scrollHeight;
+  });
+
+  window.scrapper.onDone(({ ok }) => {
+    if (ok) {
+      setStatus('✓ Gotowe! Przeglądarka zainstalowana.');
+      btn.style.display = 'none';
+      document.getElementById('launchBtn').style.display = 'block';
+    } else {
+      setStatus('✗ Błąd instalacji. Sprawdź połączenie z internetem i spróbuj ponownie.');
+      btn.disabled = false;
+      btn.textContent = '⬇ Spróbuj ponownie';
+      installing = false;
+    }
+  });
+
+  window.scrapper.install();
+}
+
+function launch() {
+  document.getElementById('launchBtn').disabled = true;
+  document.getElementById('launchBtn').textContent = '⏳ Uruchamianie…';
+  window.scrapper.continue();
+}
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@ cd /d "%~dp0"
 
 echo.
 echo  ================================
-echo   Scrapper - uruchamianie...
+echo   Scrapper — uruchamianie...
 echo  ================================
 echo.
 
@@ -20,61 +20,25 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: ── Sprawdź Git ───────────────────────────────────────────────────────────────
-git --version >nul 2>&1
-if errorlevel 1 (
-    echo  [!] Git nie jest zainstalowany!
-    echo      Pobierz ze strony: https://git-scm.com/download/win
+:: ── Zainstaluj zależności jeśli brak node_modules ────────────────────────────
+if not exist "node_modules\electron" (
+    echo  [*] Pierwsze uruchomienie — instalacja zaleznosci...
+    echo      (potrwa ok. 1-2 minuty, pobrane ~300 MB)
     echo.
-    start https://git-scm.com/download/win
-    pause
-    exit /b 1
-)
-
-:: ── Pierwsze uruchomienie: klonuj repo ───────────────────────────────────────
-if not exist "app\server.js" (
-    echo  [*] Pierwsze uruchomienie - pobieranie programu...
-    echo.
-    git clone https://github.com/milogunner/scrapper.git app
+    set PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    call npm install
     if errorlevel 1 (
         echo.
-        echo  [!] Blad podczas pobierania programu!
-        echo      Sprawdz polaczenie z internetem.
+        echo  [!] Blad instalacji npm!
         pause
         exit /b 1
     )
     echo.
 )
 
-cd app
-
-:: ── Aktualizacja ─────────────────────────────────────────────────────────────
-echo  [*] Sprawdzam aktualizacje...
-git pull origin main >nul 2>&1
-echo  [OK] Kod aktualny.
-
-:: ── Zaleznosci npm ───────────────────────────────────────────────────────────
-echo  [*] Sprawdzam zaleznosci...
-npm install --silent >nul 2>&1
-echo  [OK] Zaleznosci OK.
-
-:: ── Playwright Chromium ───────────────────────────────────────────────────────
-echo  [*] Sprawdzam przegladarke (Playwright)...
-npx playwright install chromium >nul 2>&1
-echo  [OK] Przeglądarka OK.
-
-:: ── Uruchom serwer i otwórz przeglądarkę ────────────────────────────────────
+:: ── Uruchom aplikację Electron ────────────────────────────────────────────────
+echo  [OK] Uruchamianie Scrapper...
 echo.
-echo  ================================
-echo   Scrapper działa!
-echo   Adres: http://localhost:3000
-echo  ================================
-echo.
-echo  Zamknij to okno zeby zatrzymac scrapper.
-echo.
-
-timeout /t 2 /nobreak >nul
-start "" "http://localhost:3000"
-node server.js
+npx electron .
 
 pause

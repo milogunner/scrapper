@@ -3,17 +3,19 @@ const path    = require('path');
 const crypto  = require('crypto');
 const fs      = require('fs');
 
-// Ensure required directories exist
-fs.mkdirSync(path.join(__dirname, 'downloads'), { recursive: true });
-fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
+// Katalog na dane — w Electron używamy APP_DATA_PATH (piszalny folder użytkownika)
+const dataDir = process.env.APP_DATA_PATH || __dirname;
+fs.mkdirSync(path.join(dataDir, 'downloads'), { recursive: true });
+fs.mkdirSync(path.join(dataDir, 'logs'), { recursive: true });
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Scraper registry ──────────────────────────────────────────────────────────
 const scrapers = {
-  obi:    require('./scrapers/obi'),
-  modivo: require('./scrapers/modivo'),
+  obi:              require('./scrapers/obi'),
+  modivo:           require('./scrapers/modivo'),
+  centrumrowerowe:  require('./scrapers/centrumrowerowe'),
 };
 
 // ── In-memory job store ───────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ app.post('/api/jobs', (req, res) => {
       const date = new Date().toISOString().slice(0, 10);
       job.filename = `${scraperSlug}-${date}-${jobId.slice(0, 8)}.csv`;
       // Save to disk for download
-      fs.writeFileSync(path.join(__dirname, 'downloads', job.filename), event.csvData, 'utf8');
+      fs.writeFileSync(path.join(dataDir, 'downloads', job.filename), event.csvData, 'utf8');
     }
 
     // Push to all connected SSE clients
@@ -136,7 +138,7 @@ app.delete('/api/jobs/:id', (req, res) => {
 app.get('/api/jobs/:id/download', (req, res) => {
   const job = jobs[req.params.id];
   if (!job || !job.filename) return res.status(404).json({ error: 'Not ready' });
-  const file = path.join(__dirname, 'downloads', job.filename);
+  const file = path.join(dataDir, 'downloads', job.filename);
   res.download(file, job.filename);
 });
 
@@ -162,6 +164,11 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  // Pokaż lokalne IP żeby wiedzieć jaki link dać kolędze
+  const { networkInterfaces } = require('os');
+  const nets = networkInterfaces();
+  const localIp = Object.values(nets).flat().find(n => n.family === 'IPv4' && !n.internal)?.address;
   console.log(`Scrapper UI running at http://localhost:${PORT}`);
+  if (localIp) console.log(`Sieć lokalna:    http://${localIp}:${PORT}  ← daj ten link kolędze`);
 });
