@@ -11,9 +11,9 @@
 
 const { chromium } = require('playwright');
 
-const DELAY_MIN   = 600;
-const DELAY_MAX   = 1400;
-const RETRY_DELAY = 4000;
+const DELAY_MIN   = 2500;
+const DELAY_MAX   = 4500;
+const RETRY_DELAY = 8000;
 const MAX_RETRIES = 3;
 
 const USER_AGENTS = [
@@ -81,7 +81,7 @@ async function collectVariantLinks(page, categoryUrl) {
       : `${categoryUrl.replace(/\/$/, '')}/?page=${pageNum}`;
 
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await sleep(400);
+    await sleep(1200);
 
     const { colorVariants, baseLinks } = await page.evaluate(() => {
       // Warianty kolorów — linki z v_Id (klasa color-variant)
@@ -110,7 +110,7 @@ async function collectVariantLinks(page, categoryUrl) {
     const hasNext = await page.evaluate(() => !!document.querySelector('a[rel="next"], a.next, [class*="pagination"] a[href*="page="]'));
     if (!hasNext) break;
     pageNum++;
-    await sleep(rand(400, 800));
+    await sleep(rand(1500, 2500));
   }
 
   return [...links];
@@ -121,7 +121,7 @@ async function collectVariantLinks(page, categoryUrl) {
 async function scrapeVariant(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('h1', { timeout: 10000 });
-  await sleep(300);
+  await sleep(800);
 
   return await page.evaluate(() => {
     // JSON-LD — główne źródło danych
