@@ -160,6 +160,8 @@ app.get('/api/jobs/:id/download', (req, res) => {
 // ── API: update from GitHub ───────────────────────────────────────────────────
 app.post('/api/update', (req, res) => {
   const { exec } = require('child_process');
+  // Odrzuć lokalne zmiany żeby pull nie był blokowany
+  exec('git checkout -- .', { cwd: __dirname }, () => {
   exec('git pull origin main', { cwd: __dirname }, (err, stdout, stderr) => {
     if (err) return res.status(500).json({ ok: false, message: stderr || err.message });
     const pullMsg = stdout.trim() || 'Already up to date.';
@@ -169,6 +171,7 @@ app.post('/api/update', (req, res) => {
       res.json({ ok: true, message: pullMsg });
     });
   });
+  }); // git checkout
 });
 
 // ── Cleanup old jobs (keep last 20) ──────────────────────────────────────────
