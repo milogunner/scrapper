@@ -21,11 +21,11 @@ if errorlevel 1 (
 )
 
 :: ── Zainstaluj zależności jeśli brak node_modules ────────────────────────────
-if not exist "node_modules\electron" (
-    echo  [*] Pierwsze uruchomienie — instalacja zaleznosci...
-    echo      (potrwa ok. 1-2 minuty, pobrane ~300 MB)
+if not exist "app\node_modules" (
+    echo  [*] Pierwsze uruchomienie - instalacja zaleznosci...
+    echo      (potrwa ok. 3-5 minut, pobrane ~400 MB z Chromium)
     echo.
-    set PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+    cd app
     call npm install
     if errorlevel 1 (
         echo.
@@ -34,11 +34,46 @@ if not exist "node_modules\electron" (
         exit /b 1
     )
     echo.
+    echo  [*] Pobieranie Chromium dla Playwright...
+    call npx playwright install chromium
+    if errorlevel 1 (
+        echo.
+        echo  [!] Blad pobierania Chromium!
+        echo      Sprobuj recznie: npx playwright install chromium
+        pause
+        exit /b 1
+    )
+    cd ..
+    echo.
 )
 
-:: ── Uruchom aplikację Electron ────────────────────────────────────────────────
-echo  [OK] Uruchamianie Scrapper...
+:: ── Sprawdź aktualizacje ──────────────────────────────────────────────────────
+echo  [*] Sprawdzam aktualizacje...
+cd app
+git checkout -- . >nul 2>&1
+git pull origin main >nul 2>&1
+if errorlevel 1 (
+    echo  [!] Nie mozna sprawdzic aktualizacji (brak internetu?)
+) else (
+    echo  [OK] Kod aktualny.
+)
+
+:: ── Sprawdź zależności ────────────────────────────────────────────────────────
+echo  [*] Sprawdzam zaleznosci...
+call npm install --silent
+if errorlevel 1 (
+    echo  [!] Blad npm install
+    pause
+    exit /b 1
+)
+cd ..
+
+:: ── Uruchom serwer ────────────────────────────────────────────────────────────
+echo  [OK] Uruchamianie serwera...
 echo.
-npx electron .
+echo  Otworz w przegladarce: http://localhost:3000
+echo.
+cd app
+node server.js
 
 pause
