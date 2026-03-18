@@ -8,6 +8,20 @@ const dataDir = process.env.APP_DATA_PATH || __dirname;
 fs.mkdirSync(path.join(dataDir, 'downloads'), { recursive: true });
 fs.mkdirSync(path.join(dataDir, 'logs'), { recursive: true });
 
+// Generuj public/version.json na starcie
+try {
+  const { execSync } = require('child_process');
+  const pkg = require('./package.json');
+  let raw = '';
+  try { raw = execSync('git log -1 --format=%ci', { cwd: __dirname }).toString().trim().slice(0, 10); } catch {}
+  const [y, m, d] = (raw || new Date().toISOString().slice(0, 10)).split('-');
+  fs.writeFileSync(
+    path.join(__dirname, 'public', 'version.json'),
+    JSON.stringify({ version: pkg.version, date: `${d}.${m}.${y}` }),
+    'utf8'
+  );
+} catch {}
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -25,6 +39,7 @@ const jobs = {};
 // ── Static files ──────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
 
 // ── API: list scrapers ────────────────────────────────────────────────────────
 app.get('/api/scrapers', (req, res) => {

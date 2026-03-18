@@ -395,7 +395,7 @@
     <div class="logo-icon">⚙</div>
     Scrapper
   </a>
-  <span class="badge">beta</span>
+  <span class="badge" id="versionBadge">beta</span>
   <div style="flex:1"></div>
   <button id="updateBtn" onclick="runUpdate()" style="font-size:13px;padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-family:inherit;">
     Aktualizuj
@@ -726,6 +726,12 @@ function escHtml(s) {
 }
 
 init();
+
+// Wersja
+fetch('/version.json').then(r => r.json()).then(({ version, date }) => {
+  const el = document.getElementById('versionBadge');
+  if (el) el.textContent = `v${version} (${date})`;
+}).catch(() => {});
 
 async function runUpdate() {
   const btn = document.getElementById('updateBtn');
