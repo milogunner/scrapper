@@ -145,7 +145,7 @@ async function scrapeVariant(page, url) {
 
     // Opis — section.description, bez tabel parametrów
     let description = '';
-    const descEl = document.querySelector('section.description, .description-content, #description');
+    const descEl = document.querySelector('.description, section.description, .description-content, #description');
     if (descEl) {
       const clone = descEl.cloneNode(true);
       clone.querySelectorAll('table, script, style, [class*="parameters"], [class*="specification"]').forEach(el => el.remove());
